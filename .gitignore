@@ -5,3 +5,10 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Xcode user state and local build data
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.xccheckout
+*.xcscmblueprint
