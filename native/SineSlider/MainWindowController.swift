@@ -3,8 +3,9 @@ import AppKit
 final class MainWindowController: NSWindowController {
     convenience init() {
         let contentViewController = MainViewController()
+        let contentSize = contentViewController.view.fittingSize
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 470),
+            contentRect: NSRect(origin: .zero, size: contentSize),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false

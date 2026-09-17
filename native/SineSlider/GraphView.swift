@@ -1,13 +1,48 @@
 import AppKit
 
 final class GraphView: NSView {
+    static let plotSize: CGFloat = 256
+    private static let axisLabelSpacing: CGFloat = 8
+    private static let axisLabelFont = NSFont.monospacedDigitSystemFont(
+        ofSize: 12,
+        weight: .regular
+    )
+    private static let axisLabelWidth = ceil(
+        ("255" as NSString).size(withAttributes: [.font: axisLabelFont]).width
+    )
+
     let colorFactory: ColorFactory
     var cursorX = 0
     var onCursorChange: ((Int) -> Void)?
 
     private var cursorTrackingArea: NSTrackingArea?
-    private let plotSize: CGFloat = 256
-    private let plotOrigin = CGPoint(x: 48, y: 88)
+    private let gradientHeight: CGFloat = 24
+    private let graphToGradientSpacing: CGFloat = 20
+
+    private var gradientRect: NSRect {
+        NSRect(
+            x: bounds.maxX - Self.plotSize,
+            y: 0,
+            width: Self.plotSize,
+            height: gradientHeight
+        )
+    }
+
+    private var plotRect: NSRect {
+        NSRect(
+            x: bounds.maxX - Self.plotSize,
+            y: gradientRect.maxY + graphToGradientSpacing,
+            width: Self.plotSize,
+            height: Self.plotSize
+        )
+    }
+
+    override var intrinsicContentSize: NSSize {
+        NSSize(
+            width: Self.axisLabelWidth + Self.axisLabelSpacing + Self.plotSize,
+            height: plotRect.maxY
+        )
+    }
 
     init(colorFactory: ColorFactory) {
         self.colorFactory = colorFactory
@@ -54,23 +89,19 @@ final class GraphView: NSView {
         NSColor.controlBackgroundColor.setFill()
         bounds.fill()
 
-        let plotRect = NSRect(
-            origin: plotOrigin,
-            size: NSSize(width: plotSize, height: plotSize)
-        )
         NSColor.textBackgroundColor.setFill()
         plotRect.fill()
 
         drawGrid(in: plotRect)
         drawCurves(in: plotRect)
         drawCursor(in: plotRect)
-        drawGradient(below: plotRect)
+        drawGradient()
         drawAxisLabels(around: plotRect)
     }
 
     private func updateCursor(with event: NSEvent) {
         let location = convert(event.locationInWindow, from: nil)
-        cursorX = min(255, max(0, Int(location.x - plotOrigin.x)))
+        cursorX = min(255, max(0, Int(location.x - plotRect.minX)))
         onCursorChange?(cursorX)
         needsDisplay = true
     }
@@ -79,7 +110,7 @@ final class GraphView: NSView {
         let gridPath = NSBezierPath()
         gridPath.lineWidth = 1
 
-        for step in 0...8 {
+        for step in 1..<8 {
             let y = rect.minY + CGFloat(step) * 32 + 0.5
             gridPath.move(to: CGPoint(x: rect.minX, y: y))
             gridPath.line(to: CGPoint(x: rect.maxX, y: y))
@@ -89,7 +120,9 @@ final class GraphView: NSView {
         gridPath.stroke()
 
         NSColor.quaternaryLabelColor.setStroke()
-        NSBezierPath(rect: rect).stroke()
+        let border = NSBezierPath(rect: rect.insetBy(dx: 0.5, dy: 0.5))
+        border.lineWidth = 1
+        border.stroke()
     }
 
     private func drawCurves(in rect: NSRect) {
@@ -115,7 +148,7 @@ final class GraphView: NSView {
         let cursorLine = NSBezierPath()
         cursorLine.move(to: CGPoint(x: x, y: rect.minY))
         cursorLine.line(to: CGPoint(x: x, y: rect.maxY))
-        cursorLine.lineWidth = 1
+        cursorLine.lineWidth = 2
         NSColor.labelColor.withAlphaComponent(0.72).setStroke()
         cursorLine.stroke()
 
@@ -132,8 +165,9 @@ final class GraphView: NSView {
         }
     }
 
-    private func drawGradient(below rect: NSRect) {
-        let gradientRect = NSRect(x: rect.minX, y: 48, width: rect.width, height: 24)
+    private func drawGradient() {
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(roundedRect: gradientRect, xRadius: 4, yRadius: 4).addClip()
 
         for x in 0..<256 {
             colorFactory.color(at: x).setFill()
@@ -144,20 +178,19 @@ final class GraphView: NSView {
                 height: gradientRect.height
             ).fill()
         }
-
-        NSColor.separatorColor.setStroke()
-        NSBezierPath(roundedRect: gradientRect, xRadius: 4, yRadius: 4).stroke()
+        NSGraphicsContext.restoreGraphicsState()
     }
 
     private func drawAxisLabels(around rect: NSRect) {
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
+            .font: Self.axisLabelFont,
             .foregroundColor: NSColor.secondaryLabelColor
         ]
 
-        for value in stride(from: 0, through: 192, by: 64) {
-            drawAxisLabel(value, y: rect.minY + CGFloat(value), rect: rect, attributes: attributes)
-        }
+        drawAxisLabel(0, y: rect.minY, rect: rect, attributes: attributes)
+        drawAxisLabel(63, y: rect.minY + 64, rect: rect, attributes: attributes)
+        drawAxisLabel(127, y: rect.minY + 128, rect: rect, attributes: attributes)
+        drawAxisLabel(191, y: rect.minY + 192, rect: rect, attributes: attributes)
         drawAxisLabel(255, y: rect.maxY, rect: rect, attributes: attributes)
     }
 
@@ -170,7 +203,10 @@ final class GraphView: NSView {
         let label = "\(value)" as NSString
         let labelSize = label.size(withAttributes: attributes)
         label.draw(
-            at: CGPoint(x: rect.minX - labelSize.width - 8, y: y - labelSize.height / 2),
+            at: CGPoint(
+                x: rect.minX - labelSize.width - Self.axisLabelSpacing,
+                y: y - labelSize.height / 2
+            ),
             withAttributes: attributes
         )
     }

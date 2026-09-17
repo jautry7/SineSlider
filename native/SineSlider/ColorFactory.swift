@@ -50,8 +50,8 @@ private struct ChannelFactors {
 final class ColorFactory {
     private var channelFactors = [
         ChannelFactors(factors: [1.0, 0.5, 0.5, 1.0]),
-        ChannelFactors(factors: [0.83, 0.5, 0.5, 1.0]),
-        ChannelFactors(factors: [0.67, 0.5, 0.5, 1.0])
+        ChannelFactors(factors: [0.8333, 0.5, 0.5, 1.0]),
+        ChannelFactors(factors: [0.6666, 0.5, 0.5, 1.0])
     ]
 
     func factor(for channel: ColorChannel, transform: CurveTransform) -> Double {

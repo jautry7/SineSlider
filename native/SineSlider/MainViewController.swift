@@ -1,6 +1,14 @@
 import AppKit
 
 final class MainViewController: NSViewController {
+    private enum WindowLayout {
+        static let topPadding: CGFloat = 36
+        static let bottomPadding: CGFloat = 36
+        static let leadingPadding: CGFloat = 36
+        static let trailingPadding: CGFloat = 36
+        static let columnSpacing: CGFloat = 40
+    }
+
     private let colorFactory = ColorFactory()
     private lazy var graphView = GraphView(colorFactory: colorFactory)
     private let channelSelector = NSSegmentedControl(
@@ -11,14 +19,18 @@ final class MainViewController: NSViewController {
     )
     private let controlsStack = NSStackView()
     private let sampleStack = NSStackView()
+    private let sampleContainer = NSView()
+    private let leftColumn = NSStackView()
+    private let leftColumnContainer = NSView()
+    private let gradientToValuesSpacing: CGFloat = 18
 
     private var selectedChannel: ColorChannel = .red
-    private var sliders: [CurveTransform: NSSlider] = [:]
+    private var sliders: [CurveTransform: ChannelSlider] = [:]
     private var percentageLabels: [CurveTransform: NSTextField] = [:]
     private var sampleValueLabels: [NSTextField] = []
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 760, height: 470))
+        view = NSView(frame: .zero)
     }
 
     override func viewDidLoad() {
@@ -33,18 +45,28 @@ final class MainViewController: NSViewController {
         graphView.onCursorChange = { [weak self] x in
             self?.updateSample(at: x)
         }
-        view.addSubview(graphView)
+        configureSampleReadout()
+        sampleContainer.translatesAutoresizingMaskIntoConstraints = false
+        sampleContainer.addSubview(sampleStack)
 
-        let inspector = NSVisualEffectView()
-        inspector.material = .sidebar
-        inspector.blendingMode = .withinWindow
-        inspector.state = .active
+        leftColumn.orientation = .vertical
+        leftColumn.alignment = .leading
+        leftColumn.spacing = gradientToValuesSpacing
+        leftColumn.translatesAutoresizingMaskIntoConstraints = false
+        leftColumn.addArrangedSubview(graphView)
+        leftColumn.addArrangedSubview(sampleContainer)
+
+        leftColumnContainer.translatesAutoresizingMaskIntoConstraints = false
+        leftColumnContainer.addSubview(leftColumn)
+
+        let inspector = NSView()
         inspector.wantsLayer = true
+        inspector.layer?.backgroundColor = NSColor.quaternarySystemFill.cgColor
         inspector.layer?.cornerRadius = 10
         inspector.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(inspector)
 
         channelSelector.selectedSegment = ColorChannel.red.rawValue
+        channelSelector.selectedSegmentBezelColor = .darkGray
         channelSelector.target = self
         channelSelector.action = #selector(selectChannel(_:))
         channelSelector.translatesAutoresizingMaskIntoConstraints = false
@@ -52,59 +74,92 @@ final class MainViewController: NSViewController {
 
         controlsStack.orientation = .vertical
         controlsStack.alignment = .leading
-        controlsStack.spacing = 18
+        controlsStack.distribution = .fill
+        controlsStack.spacing = 30
         controlsStack.translatesAutoresizingMaskIntoConstraints = false
         inspector.addSubview(controlsStack)
 
         for transform in CurveTransform.allCases {
-            controlsStack.addArrangedSubview(makeSliderRow(for: transform))
+            let row = makeSliderRow(for: transform)
+            controlsStack.addArrangedSubview(row)
+            row.widthAnchor.constraint(equalTo: controlsStack.widthAnchor).isActive = true
         }
 
-        configureSampleReadout()
+        let contentStack = NSStackView(views: [leftColumnContainer, inspector])
+        contentStack.orientation = .horizontal
+        contentStack.alignment = .centerY
+        contentStack.spacing = WindowLayout.columnSpacing
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(contentStack)
 
         NSLayoutConstraint.activate([
-            graphView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 18),
-            graphView.topAnchor.constraint(equalTo: view.topAnchor, constant: 18),
-            graphView.widthAnchor.constraint(equalToConstant: 330),
-            graphView.bottomAnchor.constraint(equalTo: sampleStack.topAnchor, constant: -6),
+            contentStack.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: WindowLayout.leadingPadding
+            ),
+            contentStack.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -WindowLayout.trailingPadding
+            ),
+            contentStack.topAnchor.constraint(
+                equalTo: view.topAnchor,
+                constant: WindowLayout.topPadding
+            ),
+            contentStack.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor,
+                constant: -WindowLayout.bottomPadding
+            ),
 
-            inspector.leadingAnchor.constraint(equalTo: graphView.trailingAnchor, constant: 20),
-            inspector.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            inspector.topAnchor.constraint(equalTo: view.topAnchor, constant: 24),
-            inspector.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -24),
+            leftColumnContainer.heightAnchor.constraint(equalTo: inspector.heightAnchor),
+            leftColumn.leadingAnchor.constraint(equalTo: leftColumnContainer.leadingAnchor),
+            leftColumn.trailingAnchor.constraint(equalTo: leftColumnContainer.trailingAnchor),
+            leftColumn.centerYAnchor.constraint(
+                equalTo: leftColumnContainer.centerYAnchor,
+                constant: 2
+            ),
 
-            channelSelector.topAnchor.constraint(equalTo: inspector.topAnchor, constant: 20),
-            channelSelector.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 20),
-            channelSelector.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -20),
+            sampleContainer.widthAnchor.constraint(equalTo: graphView.widthAnchor),
+            sampleContainer.heightAnchor.constraint(equalToConstant: 22),
+            sampleStack.widthAnchor.constraint(
+                equalToConstant: GraphView.plotSize + 12
+            ),
+            sampleStack.trailingAnchor.constraint(
+                equalTo: sampleContainer.trailingAnchor
+            ),
+            sampleStack.topAnchor.constraint(equalTo: sampleContainer.topAnchor),
+            sampleStack.bottomAnchor.constraint(equalTo: sampleContainer.bottomAnchor),
 
-            controlsStack.topAnchor.constraint(equalTo: channelSelector.bottomAnchor, constant: 26),
-            controlsStack.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 22),
-            controlsStack.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -22),
+            inspector.widthAnchor.constraint(equalToConstant: 340),
 
-            sampleStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
-            sampleStack.trailingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: -10),
-            sampleStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -25)
+            channelSelector.topAnchor.constraint(equalTo: inspector.topAnchor, constant: 24),
+            channelSelector.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 24),
+            channelSelector.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -24),
+
+            controlsStack.topAnchor.constraint(equalTo: channelSelector.bottomAnchor, constant: 32),
+            controlsStack.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 32),
+            controlsStack.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -32),
+            controlsStack.bottomAnchor.constraint(equalTo: inspector.bottomAnchor, constant: -30)
         ])
     }
 
     private func configureSampleReadout() {
         sampleStack.orientation = .horizontal
         sampleStack.alignment = .centerY
-        sampleStack.distribution = .fillEqually
-        sampleStack.spacing = 8
+        sampleStack.distribution = .fill
         sampleStack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(sampleStack)
 
+        var pairs: [NSStackView] = []
         for name in ["x", "R", "G", "B"] {
-            let valueLabel = NSTextField(labelWithString: "0")
+            let valueLabel = NSTextField(string: "0")
+            valueLabel.isEditable = false
+            valueLabel.isSelectable = false
+            valueLabel.isBezeled = true
+            valueLabel.bezelStyle = .roundedBezel
+            valueLabel.drawsBackground = true
+            valueLabel.backgroundColor = .controlBackgroundColor
             valueLabel.alignment = .center
             valueLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .medium)
-            valueLabel.wantsLayer = true
-            valueLabel.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-            valueLabel.layer?.cornerRadius = 5
-            valueLabel.layer?.borderColor = NSColor.separatorColor.cgColor
-            valueLabel.layer?.borderWidth = 1
-            valueLabel.heightAnchor.constraint(equalToConstant: 28).isActive = true
+            valueLabel.widthAnchor.constraint(equalToConstant: 38).isActive = true
 
             let nameLabel = NSTextField(labelWithString: name)
             nameLabel.textColor = .secondaryLabelColor
@@ -113,10 +168,23 @@ final class MainViewController: NSViewController {
             let pair = NSStackView(views: [nameLabel, valueLabel])
             pair.orientation = .horizontal
             pair.alignment = .centerY
-            pair.spacing = 5
-            sampleStack.addArrangedSubview(pair)
+            pair.spacing = 6
+            pairs.append(pair)
             sampleValueLabels.append(valueLabel)
         }
+
+        let rgbStack = NSStackView(views: Array(pairs.dropFirst()))
+        rgbStack.orientation = .horizontal
+        rgbStack.alignment = .centerY
+        rgbStack.spacing = 14
+
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        sampleStack.addArrangedSubview(pairs[0])
+        sampleStack.addArrangedSubview(spacer)
+        sampleStack.addArrangedSubview(rgbStack)
     }
 
     private func makeSliderRow(for transform: CurveTransform) -> NSView {
@@ -135,7 +203,7 @@ final class MainViewController: NSViewController {
         heading.distribution = .fill
         heading.alignment = .centerY
 
-        let slider = NSSlider(
+        let slider = ChannelSlider(
             value: 0,
             minValue: 0,
             maxValue: 100,
@@ -144,13 +212,12 @@ final class MainViewController: NSViewController {
         )
         slider.isContinuous = true
         slider.tag = transform.rawValue
-        slider.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
         sliders[transform] = slider
 
         let row = NSStackView(views: [heading, slider])
         row.orientation = .vertical
         row.alignment = .leading
-        row.spacing = 7
+        row.spacing = 6
         heading.widthAnchor.constraint(equalTo: row.widthAnchor).isActive = true
         slider.widthAnchor.constraint(equalTo: row.widthAnchor).isActive = true
 
@@ -165,6 +232,7 @@ final class MainViewController: NSViewController {
                 (colorFactory.factor(for: selectedChannel, transform: transform) * 100).rounded()
             )
             sliders[transform]?.integerValue = percentage
+            sliders[transform]?.channelColor = selectedChannel.displayColor
             percentageLabels[transform]?.stringValue = "\(percentage)%"
         }
     }
