@@ -22,7 +22,7 @@ final class MainViewController: NSViewController {
     private let sampleContainer = NSView()
     private let leftColumn = NSStackView()
     private let leftColumnContainer = NSView()
-    private let gradientToValuesSpacing: CGFloat = 18
+    private let gradientToValuesSpacing: CGFloat = 16
 
     private var selectedChannel: ColorChannel = .red
     private var sliders: [CurveTransform: ChannelSlider] = [:]
@@ -129,16 +129,16 @@ final class MainViewController: NSViewController {
             sampleStack.topAnchor.constraint(equalTo: sampleContainer.topAnchor),
             sampleStack.bottomAnchor.constraint(equalTo: sampleContainer.bottomAnchor),
 
-            inspector.widthAnchor.constraint(equalToConstant: 340),
+            inspector.widthAnchor.constraint(equalToConstant: 300),
 
-            channelSelector.topAnchor.constraint(equalTo: inspector.topAnchor, constant: 24),
-            channelSelector.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 24),
-            channelSelector.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -24),
+            channelSelector.topAnchor.constraint(equalTo: inspector.topAnchor, constant: 20),
+            channelSelector.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 20),
+            channelSelector.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -20),
 
-            controlsStack.topAnchor.constraint(equalTo: channelSelector.bottomAnchor, constant: 32),
-            controlsStack.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 32),
-            controlsStack.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -32),
-            controlsStack.bottomAnchor.constraint(equalTo: inspector.bottomAnchor, constant: -30)
+            controlsStack.topAnchor.constraint(equalTo: channelSelector.bottomAnchor, constant: 30),
+            controlsStack.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 28),
+            controlsStack.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -28),
+            controlsStack.bottomAnchor.constraint(equalTo: inspector.bottomAnchor, constant: -28)
         ])
     }
 

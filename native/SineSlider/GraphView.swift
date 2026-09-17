@@ -17,7 +17,7 @@ final class GraphView: NSView {
 
     private var cursorTrackingArea: NSTrackingArea?
     private let gradientHeight: CGFloat = 24
-    private let graphToGradientSpacing: CGFloat = 20
+    private let graphToGradientSpacing: CGFloat = 18
 
     private var gradientRect: NSRect {
         NSRect(
