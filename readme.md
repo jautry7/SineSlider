@@ -4,6 +4,12 @@ Experimental project to create more natural looking gradients by interpolating c
 
 Originally written in Java in May 2017.
 
-Rewritten in Swift (native macOS) in Sept 2026 with the help of AI.
+Rewritten as a native macOS app (Swift) in Sept 2026 with the help of AI.
 
 ![screenshot](screenshot.png)
+
+---
+
+Original Java design:
+
+![screenshot](screenshot-java.png)

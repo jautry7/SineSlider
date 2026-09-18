@@ -86,9 +86,6 @@ final class GraphView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
 
-        NSColor.controlBackgroundColor.setFill()
-        bounds.fill()
-
         NSColor.textBackgroundColor.setFill()
         plotRect.fill()
 

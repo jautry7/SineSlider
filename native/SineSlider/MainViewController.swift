@@ -59,25 +59,29 @@ final class MainViewController: NSViewController {
         leftColumnContainer.translatesAutoresizingMaskIntoConstraints = false
         leftColumnContainer.addSubview(leftColumn)
 
-        let inspector = NSView()
-        inspector.wantsLayer = true
-        inspector.layer?.backgroundColor = NSColor.quaternarySystemFill.cgColor
-        inspector.layer?.cornerRadius = 10
+        let inspector = NSBox()
+        inspector.boxType = .custom
+        inspector.titlePosition = .noTitle
+        inspector.borderWidth = 0
+        inspector.cornerRadius = 10
+        inspector.fillColor = .tertiarySystemFill
+        inspector.contentViewMargins = .zero
         inspector.translatesAutoresizingMaskIntoConstraints = false
+        let inspectorContent = inspector.contentView!
 
         channelSelector.selectedSegment = ColorChannel.red.rawValue
         channelSelector.selectedSegmentBezelColor = .darkGray
         channelSelector.target = self
         channelSelector.action = #selector(selectChannel(_:))
         channelSelector.translatesAutoresizingMaskIntoConstraints = false
-        inspector.addSubview(channelSelector)
+        inspectorContent.addSubview(channelSelector)
 
         controlsStack.orientation = .vertical
         controlsStack.alignment = .leading
         controlsStack.distribution = .fill
         controlsStack.spacing = 30
         controlsStack.translatesAutoresizingMaskIntoConstraints = false
-        inspector.addSubview(controlsStack)
+        inspectorContent.addSubview(controlsStack)
 
         for transform in CurveTransform.allCases {
             let row = makeSliderRow(for: transform)
@@ -131,14 +135,14 @@ final class MainViewController: NSViewController {
 
             inspector.widthAnchor.constraint(equalToConstant: 300),
 
-            channelSelector.topAnchor.constraint(equalTo: inspector.topAnchor, constant: 20),
-            channelSelector.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 20),
-            channelSelector.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -20),
+            channelSelector.topAnchor.constraint(equalTo: inspectorContent.topAnchor, constant: 20),
+            channelSelector.leadingAnchor.constraint(equalTo: inspectorContent.leadingAnchor, constant: 20),
+            channelSelector.trailingAnchor.constraint(equalTo: inspectorContent.trailingAnchor, constant: -20),
 
             controlsStack.topAnchor.constraint(equalTo: channelSelector.bottomAnchor, constant: 30),
-            controlsStack.leadingAnchor.constraint(equalTo: inspector.leadingAnchor, constant: 28),
-            controlsStack.trailingAnchor.constraint(equalTo: inspector.trailingAnchor, constant: -28),
-            controlsStack.bottomAnchor.constraint(equalTo: inspector.bottomAnchor, constant: -28)
+            controlsStack.leadingAnchor.constraint(equalTo: inspectorContent.leadingAnchor, constant: 28),
+            controlsStack.trailingAnchor.constraint(equalTo: inspectorContent.trailingAnchor, constant: -28),
+            controlsStack.bottomAnchor.constraint(equalTo: inspectorContent.bottomAnchor, constant: -28)
         ])
     }
 
